@@ -7,7 +7,7 @@ import markdown
 import yaml
 from datetime import datetime
 
-SENDER = "jack+blog@baty.net"
+SENDER = "Jack Baty <jack+blog@baty.net>"
 RECIPIENT = "jack@baty.net"
 DEFAULT_MAILDIR_PATH = os.path.expanduser("~/Mail/blog")
 
@@ -25,6 +25,13 @@ def markdown_to_maildir(markdown_file, maildir_path=DEFAULT_MAILDIR_PATH):
         md_content = content
     
     subject = front_matter.get('title', 'No Subject')
+    email_date = front_matter.get('date', datetime.now().isoformat())
+    
+    # Convert date to correct format
+    try:
+        email_date = datetime.fromisoformat(email_date)
+    except ValueError:
+        email_date = datetime.now()
     
     # Convert Markdown to HTML
     html_content = markdown.markdown(md_content)
@@ -34,7 +41,7 @@ def markdown_to_maildir(markdown_file, maildir_path=DEFAULT_MAILDIR_PATH):
     msg['From'] = SENDER
     msg['To'] = RECIPIENT
     msg['Subject'] = subject
-    msg['Date'] = email.utils.format_datetime(datetime.now())
+    msg['Date'] = email.utils.format_datetime(email_date)
     msg.set_content(md_content)  # Plain text version
     msg.add_alternative(html_content, subtype='html')
     
@@ -43,7 +50,7 @@ def markdown_to_maildir(markdown_file, maildir_path=DEFAULT_MAILDIR_PATH):
         os.makedirs(os.path.join(maildir_path, subfolder), exist_ok=True)
     
     # Save to Maildir
-    filename = f'{datetime.now().timestamp()}.{os.getpid()}@localhost'
+    filename = f'{email_date.timestamp()}.{os.getpid()}@localhost'
     filepath = os.path.join(maildir_path, 'new', filename)
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(msg.as_string())
